@@ -97,31 +97,28 @@ with open('/data/people.csv') as csv_file:
 print("people data is inserted to people table!")
 
 # output the table to a JSON file
-rows = connection.execute(sqlalchemy.sql.select([ex_people])).fetchall()
-# rows = [{'id': row[0], 'given_name': row[1], 'family_name': row[2], 'date_of_birth': row[3], 'place_id': row[4]} for row in rows]
+with open('/data/people_output.js',"w") as json_file:
+  rows = connection.execute(sqlalchemy.sql.select([ex_people])).fetchall()
 
-rowarraytolist = []
-
-for eachrow in rows:
-    d = collections.OrderedDict()
-    d["id"] = eachrow[0]
-    d["given_name"] = eachrow[1]
-    d["family_name"] = eachrow[2]
-    d["date_of_birth"] = eachrow[3]
-    d["place_id"] = eachrow[4]
-    rowarraytolist.append(d)
-
-j = json.dumps(rowarraytolist,default=json_serial)
-
-with open('/data/people_output.js',"w") as jsn:
-    jsn.write(j)
+  rows = [{'id_people': row[0], 'given_name': row[1], 'family_name': row[2], 'date_of_birth': row[3], 'place_id': row[4]} for row in rows]
+  json.dump(rows, json_file, separators=(',', ':'), default=json_serial)
 
 print("json file for people has been extracted!")
   
 # output the compare_output file
+
+sql_stat = "select places.country, count(places.country) as count_country  from people as p join places as places on places.id = p.place_id group by places.country;"
+compare_rows = connection.execute(sql_stat).fetchall()
+  
+rowarraytolist = {}
+
+for eachrow in compare_rows:
+    rowarraytolist[eachrow[0]] = eachrow[1]
+
+print(rowarraytolist)
+j = json.dumps(rowarraytolist,default=json_serial)
+
 with open('/data/compare_output.json', 'w') as json_file:
-  compare_rows = connection.execute("select places.country, count(places.country) as count_country  from people as p join places as places on places.id = p.place_id group by places.country").fetchall()
-  compare_rows = [{'country': row[0], 'count_country': row[1]} for row in compare_rows]
-  json.dump(rows,json_file,separators=(',',':'))
+  json_file.write(j)    
 
 print("compare data extracted!")
